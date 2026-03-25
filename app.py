@@ -2,27 +2,23 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import plotly.express as px
+import os
 
 st.set_page_config(page_title="Fazaila Tracker", page_icon="🩺", layout="centered")
-
-# PWA manifest (makes it installable)
-st.markdown("""
-    <link rel="manifest" href="manifest.json">
-    <style>
-    .stApp { max-width: 100%; }
-    </style>
-""", unsafe_allow_html=True)
 
 st.title("🩺 Fazaila Symptom & Vitals Tracker")
 st.caption("Metastatic Gastric Cancer • Cycle 6 (13 Mar 2026) • Nadir Week 20–27 Mar")
 
-# Data handling
+# Load or create data safely
+data_file = "fazaila_data.csv"
+
+if os.path.exists(data_file) and os.path.getsize(data_file) > 0:
+    df = pd.read_csv(data_file)
+else:
+    df = pd.DataFrame(columns=["Date", "Time", "Stomach_Empty", "Borborygmi", "BP_Sys", "BP_Dia", 
+                               "Tongue_Burning", "Jaw_Scapula_Pain", "Meal_Readiness", "Notes"])
+
 if "df" not in st.session_state:
-    try:
-        df = pd.read_csv("fazaila_data.csv")
-    except FileNotFoundError:
-        df = pd.DataFrame(columns=["Date", "Time", "Stomach_Empty", "Borborygmi", "BP_Sys", "BP_Dia", 
-                                   "Tongue_Burning", "Jaw_Scapula_Pain", "Meal_Readiness", "Notes"])
     st.session_state.df = df
 
 date_today = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -55,8 +51,8 @@ with st.form("daily_entry"):
             "Notes": notes
         }])
         st.session_state.df = pd.concat([st.session_state.df, new_row], ignore_index=True)
-        st.session_state.df.to_csv("fazaila_data.csv", index=False)
-        st.success("✅ Saved!")
+        st.session_state.df.to_csv(data_file, index=False)
+        st.success("✅ Entry saved!")
 
 # History & Charts
 st.subheader("History & Trends")
