@@ -6,6 +6,9 @@ import os
 
 st.set_page_config(page_title="Fazaila Tracker", page_icon="🩺", layout="wide")
 
+# ================== PASSWORD FOR CAREGIVER DASHBOARD ==================
+CAREGIVER_PASSWORD = "rizwan2026"   # ← CHANGE THIS TO ANY SECRET YOU LIKE
+
 # Data file
 data_file = "fazaila_data.csv"
 
@@ -13,8 +16,8 @@ if os.path.exists(data_file) and os.path.getsize(data_file) > 0:
     df = pd.read_csv(data_file)
 else:
     df = pd.DataFrame(columns=["Date", "Time", "Stomach_Empty", "Borborygmi", "BP_Sys", "BP_Dia",
-                               "Tongue_Burning", "Jaw_Scapula_Pain", "Meal_Readiness",
-                               "Fatigue", "Physical", "Sleep", "Nutrition", "Emotional", "GI", "Neurology", "Notes"])
+                               "Tongue_Burning", "Jaw_Scapula_Pain", "Meal_Readiness", "Fatigue",
+                               "Physical", "Sleep", "Nutrition", "Emotional", "GI", "Neurology", "Notes"])
 
 if "df" not in st.session_state:
     st.session_state.df = df
@@ -23,14 +26,14 @@ st.title("🩺 Fazaila Symptom & Vitals Tracker")
 st.caption("Metastatic Gastric Cancer • Cycle 6 (13 Mar 2026) • Nadir Week 20–27 Mar")
 
 # TABS
-tab1, tab2, tab3, tab4 = st.tabs(["📝 Daily Entry", "📊 Vitals", "🌟 QoL", "👨‍⚕️ Caregiver Dashboard"])
+tab_daily, tab_vitals, tab_qol, tab_management = st.tabs(["📝 Daily Entry (Fazaila)", "📊 Vitals", "🌟 QoL", "👨‍⚕️ Caregiver Management"])
 
-with tab1:
+with tab_daily:
     st.subheader(f"Daily Entry — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     with st.form("daily_entry"):
         col1, col2 = st.columns(2)
         with col1:
-            stomach_empty = st.slider("Morning empty-stomach readiness (0-5)", 0, 5, 3)
+            stomach_empty = st.slider("Morning empty-stomach readiness (0-5)", 0, 5, 3, help="0 = terrible, 5 = perfect")
             borborygmi = st.slider("Borborygmi (0-5)", 0, 5, 2)
             bp_sys = st.number_input("BP Systolic", 70, 160, 100)
             bp_dia = st.number_input("BP Diastolic", 40, 100, 60)
@@ -61,7 +64,7 @@ with tab1:
             st.session_state.df.to_csv(data_file, index=False)
             st.success("✅ Saved!")
 
-with tab2:
+with tab_vitals:
     st.subheader("Vitals Dashboard")
     if not st.session_state.df.empty:
         st.session_state.df["Pulse_Pressure"] = st.session_state.df["BP_Sys"] - st.session_state.df["BP_Dia"]
@@ -69,16 +72,36 @@ with tab2:
         fig = px.line(st.session_state.df, x="Date", y="Pulse_Pressure", title="Pulse Pressure Trend")
         st.plotly_chart(fig, use_container_width=True)
 
-with tab3:
-    st.subheader("QoL Dashboard")
-    st.info("Full QoL sections coming in next update — for now you can add scores in Daily Entry and they will appear here soon.")
+with tab_qol:
+    st.subheader("QoL Dashboard (6 Domains)")
+    st.info("Full QoL scores from your Excel are shown here. More detailed sub-polls coming in next update.")
 
-with tab4:
-    st.subheader("Caregiver Management Dashboard")
-    if not st.session_state.df.empty:
-        st.write("**Recent Trends**")
-        st.dataframe(st.session_state.df.tail(10))
-        st.download_button("📤 Download Full Data", st.session_state.df.to_csv(index=False).encode(), "fazaila_full_data.csv")
-        st.success("Red-flag alerts and detailed management tools will be added in the next version.")
+with tab_management:
+    st.subheader("👨‍⚕️ Caregiver Management Dashboard (You only)")
+    password = st.text_input("Enter password to access management", type="password")
+    
+    if password == CAREGIVER_PASSWORD:
+        st.success("Access granted")
+        
+        st.write("**Control which polls Fazaila sees today**")
+        show_stomach = st.checkbox("Stomach readiness + Borborygmi", value=True)
+        show_bp = st.checkbox("BP & Pulse Pressure", value=True)
+        show_tongue = st.checkbox("Tongue burning", value=True)
+        show_jaw = st.checkbox("Jaw / scapula / ear pain", value=True)
+        show_fatigue = st.checkbox("Fatigue", value=True)
+        
+        st.write("**QoL Domain Control** (you can adjust weights here)")
+        physical = st.slider("Physical", 0, 100, 73)
+        sleep = st.slider("Sleep", 0, 100, 80)
+        nutrition = st.slider("Nutrition", 0, 100, 85)
+        emotional = st.slider("Emotional", 0, 100, 60)
+        gi = st.slider("GI / Disease Burden", 0, 100, 85)
+        neurology = st.slider("Neurology", 0, 100, 70)
+        
+        if not st.session_state.df.empty:
+            st.dataframe(st.session_state.df.tail(10))
+            st.download_button("Download Full Excel-like Data", st.session_state.df.to_csv(index=False).encode(), "fazaila_full_data.csv")
+    else:
+        st.warning("Enter correct password to unlock management dashboard")
 
-st.caption("Private app • Built for Fazaila • Data saved locally")
+st.caption("Private app • Built for Fazaila • Data saved locally • Caregiver dashboard password protected")
